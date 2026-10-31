@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>凝血功能評估：INR 視覺化計算工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自訂字體與動畫 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        /* 隱藏數字輸入框的上下箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* 儀表板指針動畫 */
+        #needle {
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: 50% 90%;
+        }
+
+        /* 輸入框聚焦時的漸層邊框效果 */
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            border-color: #6366f1;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex justify-center items-start text-slate-800">
+
+    <div class="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+        
+        <!-- 標題與基本介紹 -->
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 md:p-8 text-white">
+            <h1 class="text-2xl md:text-3xl font-bold mb-3">凝血功能評估：INR 計算器</h1>
+            <p class="text-indigo-100 text-sm md:text-base leading-relaxed">
+                **INR (國際標準化比值)** 用於標準化不同實驗室的凝血酶原時間 (PT)，以準確評估血液凝固能力。
+                此工具協助您透過視覺化公式快速計算 INR 值，並判讀其在服用抗凝血劑 (如 Warfarin) 期間的臨床風險與意義。
+            </p>
+        </div>
+
+        <div class="p-6 md:p-8 space-y-10">
+            
+            <!-- 區塊 1：視覺化公式與輸入 -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-slate-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    步驟一：輸入檢驗數值
+                </h2>
+                
+                <div class="bg-slate-50 rounded-2xl p-6 md:p-10 flex flex-col items-center justify-center border border-slate-200">
+                    
+                    <!-- 公式視覺排版 -->
+                    <div class="flex items-center text-xl md:text-2xl font-semibold text-slate-600 mb-4 md:mb-6">
+                        <span class="mr-3 md:mr-6 text-indigo-600">INR =</span>
+                        
+                        <div class="flex items-center">
+                            <!-- 左括號 -->
+                            <span class="text-5xl md:text-7xl font-light text-slate-400">(</span>
+                            
+                            <!-- 分數結構 -->
+                            <div class="flex flex-col items-center mx-2 md:mx-4 w-36 md:w-44">
+                                <input type="number" id="ptTest" placeholder="病患 PT (秒)" class="input-field w-full text-center p-2 rounded-lg border-2 border-slate-300 text-base md:text-lg font-bold text-slate-800 placeholder-slate-400 bg-white" oninput="calculateINR()">
+                                <div class="w-full h-[2px] bg-slate-400 my-2 rounded-full"></div>
+                                <input type="number" id="ptNormal" placeholder="正常 PT (11~14)" title="正常對照值常見範圍約 11-14 秒" class="input-field w-full text-center p-2 rounded-lg border-2 border-slate-300 text-base md:text-lg font-bold text-slate-800 placeholder-slate-400 bg-white" oninput="calculateINR()">
+                            </div>
+                            
+                            <!-- 右括號 -->
+                            <span class="text-5xl md:text-7xl font-light text-slate-400">)</span>
+                            
+                            <!-- 指數 (ISI) -->
+                            <div class="flex flex-col justify-start h-full -mt-16 md:-mt-24 ml-1 md:ml-2">
+                                <input type="number" id="isi" placeholder="ISI (1.0~1.4)" title="ISI 常見數值約介於 1.0-1.4 之間" class="input-field w-24 md:w-28 text-center p-1.5 rounded-md border-2 border-slate-300 text-sm md:text-base font-bold text-slate-800 placeholder-slate-400 bg-white" oninput="calculateINR()" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 常見數值提示 -->
+                    <div class="text-xs md:text-sm text-slate-500 bg-white px-4 py-2.5 rounded-full shadow-sm border border-slate-100 text-center w-full max-w-md">
+                        💡 常見參考區間：正常 PT 約 <span class="font-semibold text-slate-700">11~14 秒</span> ｜ ISI 約 <span class="font-semibold text-slate-700">1.0~1.4</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- 區塊 2：儀表板與判讀結果 -->
+            <div class="space-y-6">
+                <h2 class="text-lg font-semibold text-slate-700 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                    步驟二：視覺化判讀
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    
+                    <!-- SVG 半圓形儀表板 -->
+                    <div class="relative w-full max-w-[300px] mx-auto">
+                        <svg viewBox="0 0 200 110" class="w-full drop-shadow-md">
+                            <!-- 儀表板區域 (0-6 分為多個色塊) 總長度為 PI * R (約 282.7) -->
+                            <!-- R=90, cx=100, cy=100. 半圓周長 = 282.74 -->
+                            
+                            <!-- 0.0 - 0.8: 低 (太凝固) / 黃色 -->
+                            <path d="M 10 100 A 90 90 0 0 1 20.3 57.6" fill="none" stroke="#FBBF24" stroke-width="20" stroke-linecap="butt" />
+                            
+                            <!-- 0.8 - 1.2: 正常區 / 綠色 -->
+                            <path d="M 20.3 57.6 A 90 90 0 0 1 37.6 35.3" fill="none" stroke="#22C55E" stroke-width="20" stroke-linecap="butt" />
+                            
+                            <!-- 1.2 - 2.0: 亞治療區 / 淺藍 -->
+                            <path d="M 37.6 35.3 A 90 90 0 0 1 90.5 10.5" fill="none" stroke="#38BDF8" stroke-width="20" stroke-linecap="butt" />
+                            
+                            <!-- 2.0 - 3.0: 一般治療區 / 深藍 -->
+                            <path d="M 90.5 10.5 A 90 90 0 0 1 154 22.8" fill="none" stroke="#4F46E5" stroke-width="20" stroke-linecap="butt" />
+
+                            <!-- 3.0 - 4.0: 高強度治療 / 紫色 -->
+                            <path d="M 154 22.8 A 90 90 0 0 1 187 63" fill="none" stroke="#9333EA" stroke-width="20" stroke-linecap="butt" />
+
+                            <!-- 4.0 - 6.0+: 嚴重出血風險 / 紅色 -->
+                            <path d="M 187 63 A 90 90 0 0 1 190 100" fill="none" stroke="#EF4444" stroke-width="20" stroke-linecap="butt" />
+
+                            <!-- 刻度與文字 -->
+                            <text x="10" y="110" font-size="10" fill="#64748b" text-anchor="middle">0</text>
+                            <text x="30" y="45" font-size="8" fill="#64748b" text-anchor="middle">1.0</text>
+                            <text x="95" y="8" font-size="8" fill="#64748b" text-anchor="middle">2.0</text>
+                            <text x="160" y="15" font-size="8" fill="#64748b" text-anchor="middle">3.0</text>
+                            <text x="195" y="55" font-size="8" fill="#64748b" text-anchor="middle">4.0</text>
+                            <text x="190" y="110" font-size="10" fill="#64748b" text-anchor="middle">6+</text>
+
+                            <!-- 指針 (預設指向最左邊 0 的位置，旋轉中心為 100,100) -->
+                            <g id="needle" transform="rotate(-90 100 100)">
+                                <!-- 指針主體 -->
+                                <path d="M 97 100 L 100 20 L 103 100 Z" fill="#334155" />
+                                <!-- 中心圓點 -->
+                                <circle cx="100" cy="100" r="6" fill="#0F172A" />
+                                <circle cx="100" cy="100" r="2" fill="#FFFFFF" />
+                            </g>
+                        </svg>
+
+                        <!-- 中間顯示具體數值 -->
+                        <div class="absolute bottom-0 left-0 right-0 text-center -mb-6">
+                            <span class="text-sm text-slate-500 font-semibold">計算結果</span><br>
+                            <span id="resultValue" class="text-3xl font-bold text-slate-800">--</span>
+                        </div>
+                    </div>
+
+                    <!-- 臨床意義解說卡片 -->
+                    <div id="clinicalCard" class="bg-slate-50 rounded-2xl p-6 border border-slate-200 min-h-[160px] flex flex-col justify-center transition-colors duration-300">
+                        <div class="flex items-center mb-2">
+                            <span id="statusIcon" class="text-2xl mr-3">🩺</span>
+                            <h3 id="statusTitle" class="text-xl font-bold text-slate-700">等待輸入...</h3>
+                        </div>
+                        <p id="statusDesc" class="text-slate-600 text-sm md:text-base leading-relaxed mt-2">
+                            請在上方欄位輸入病患凝血酶原時間 (PT)、正常 PT 及 ISI 值，以獲取 INR 數值與臨床建議。
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 取得 DOM 元素
+        const ptTestInput = document.getElementById('ptTest');
+        const ptNormalInput = document.getElementById('ptNormal');
+        const isiInput = document.getElementById('isi');
+        
+        const needle = document.getElementById('needle');
+        const resultValue = document.getElementById('resultValue');
+        const clinicalCard = document.getElementById('clinicalCard');
+        const statusTitle = document.getElementById('statusTitle');
+        const statusDesc = document.getElementById('statusDesc');
+        const statusIcon = document.getElementById('statusIcon');
+
+        // 主要計算邏輯
+        function calculateINR() {
+            const ptTest = parseFloat(ptTestInput.value);
+            const ptNormal = parseFloat(ptNormalInput.value);
+            const isi = parseFloat(isiInput.value);
+
+            // 檢查是否皆有輸入且大於0
+            if (ptTest > 0 && ptNormal > 0 && isi > 0) {
+                // 公式： (PT_test / PT_normal) ^ ISI
+                const inr = Math.pow((ptTest / ptNormal), isi);
+                const roundedINR = inr.toFixed(2);
+                
+                resultValue.textContent = roundedINR;
+                updateDashboard(parseFloat(roundedINR));
+            } else {
+                // 若資料不齊全，重置畫面
+                resetDashboard();
+            }
+        }
+
+        // 更新儀表板指針與臨床意義
+        function updateDashboard(inr) {
+            // 1. 更新指針角度
+            // 設定範圍 0 ~ 6，對應角度 -90度(最左) 到 +90度(最右)
+            // 總角度跨度為 180度
+            let mappedValue = inr;
+            if (mappedValue > 6) mappedValue = 6; // 上限卡在 6，避免指針破表
+            
+            const percentage = mappedValue / 6;
+            const angle = (percentage * 180) - 90; // 從 -90 算起
+            
+            needle.style.transform = `rotate(${angle}deg)`;
+
+            // 2. 更新臨床意義與卡片樣式
+            let title = "";
+            let desc = "";
+            let icon = "";
+            let bgColorClass = "bg-slate-50";
+            let borderColorClass = "border-slate-200";
+            let textColorClass = "text-slate-700";
+
+            if (inr < 0.8) {
+                title = "凝血過快 / 低於正常";
+                desc = "非服藥者少見。若服用抗凝血劑者數值如此，代表藥效極度不足，有形成血栓的風險。";
+                icon = "⚠️";
+                bgColorClass = "bg-yellow-50";
+                borderColorClass = "border-yellow-300";
+                textColorClass = "text-yellow-800";
+            } 
+            else if (inr >= 0.8 && inr <= 1.2) {
+                title = "健康正常範圍";
+                desc = "一般未服用抗凝血劑的健康成人，其 INR 應落於此區間。";
+                icon = "✅";
+                bgColorClass = "bg-green-50";
+                borderColorClass = "border-green-300";
+                textColorClass = "text-green-800";
+            }
+            else if (inr > 1.2 && inr < 2.0) {
+                title = "抗凝血藥效不足";
+                desc = "高於正常人但未達一般治療標準。若有心房顫動等適應症，此數值預防血栓的效果可能不夠。";
+                icon = "📉";
+                bgColorClass = "bg-sky-50";
+                borderColorClass = "border-sky-300";
+                textColorClass = "text-sky-800";
+            }
+            else if (inr >= 2.0 && inr <= 3.0) {
+                title = "標準治療目標 (Therapeutic)";
+                desc = "多數需要口服抗凝血劑 (Warfarin) 的患者 (如心房顫動、深部靜脈栓塞)，此為最理想的控制範圍。";
+                icon = "🎯";
+                bgColorClass = "bg-indigo-50";
+                borderColorClass = "border-indigo-300";
+                textColorClass = "text-indigo-800";
+            }
+            else if (inr > 3.0 && inr <= 4.0) {
+                title = "高強度治療 / 偏高";
+                desc = "置換機械式人工心臟瓣膜的患者，目標可能在此區間 (2.5-3.5)。一般患者則顯示藥效偏高，需注意出血徵兆。";
+                icon = "🟣";
+                bgColorClass = "bg-purple-50";
+                borderColorClass = "border-purple-300";
+                textColorClass = "text-purple-800";
+            }
+            else { // inr > 4.0
+                title = "危險：出血風險極高";
+                desc = "血液凝固能力極弱。有嚴重的自發性出血危險 (如腸胃道、腦出血)，應立即停藥或就醫處置。";
+                icon = "🚨";
+                bgColorClass = "bg-red-50";
+                borderColorClass = "border-red-300";
+                textColorClass = "text-red-800";
+            }
+
+            // 替換卡片 Class
+            clinicalCard.className = `rounded-2xl p-6 border min-h-[160px] flex flex-col justify-center transition-colors duration-300 ${bgColorClass} ${borderColorClass}`;
+            statusTitle.className = `text-xl font-bold ${textColorClass}`;
+            
+            // 寫入文字
+            statusTitle.textContent = title;
+            statusDesc.textContent = desc;
+            statusIcon.textContent = icon;
+        }
+
+        // 重置儀表板狀態
+        function resetDashboard() {
+            resultValue.textContent = "--";
+            needle.style.transform = `rotate(-90deg)`;
+            
+            clinicalCard.className = `bg-slate-50 rounded-2xl p-6 border border-slate-200 min-h-[160px] flex flex-col justify-center transition-colors duration-300`;
+            statusTitle.className = `text-xl font-bold text-slate-700`;
+            
+            statusTitle.textContent = "等待輸入...";
+            statusDesc.textContent = "請在上方欄位輸入病患凝血酶原時間 (PT)、正常 PT 及 ISI 值，以獲取 INR 數值與臨床建議。";
+            statusIcon.textContent = "🩺";
+        }
+    </script>
+</body>
+</html>
